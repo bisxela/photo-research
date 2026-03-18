@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Photo Search
 
-## Getting Started
+Monorepo for the image semantic search project.
 
-First, run the development server:
+## Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```text
+photo-search/
+├── photo-search-frontend/
+└── photo-search-backend/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Components
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Frontend
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Path: `photo-search-frontend/`
 
-## Learn More
+- Next.js application
+- Upload images
+- Text-to-image search
+- Image-to-image search
+- Poll image encoding status
 
-To learn more about Next.js, take a look at the following resources:
+### Backend
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Path: `photo-search-backend/`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- FastAPI service
+- PostgreSQL + pgvector
+- Chinese CLIP embedding generation
+- Thumbnail generation
+- Static file exposure for uploaded assets
 
-## Deploy on Vercel
+## Local Development
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 1. Start backend
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+cd photo-search-backend
+cp .env.example .env
+docker compose up -d
+```
+
+Health check:
+
+```bash
+curl -s http://localhost:8000/health
+```
+
+### 2. Start frontend
+
+```bash
+cd photo-search-frontend
+cp .env.local.example .env.local
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+## Ports
+
+- `3000`: frontend dev server
+- `8000`: backend API
+- `5433`: PostgreSQL on host
+- `9000`: MinIO API
+- `9001`: MinIO console
+
+## GitHub Notes
+
+- Do not commit local env files
+- Do not commit model weights
+- Do not commit runtime caches or uploaded data
+- Frontend and backend each keep their own local README for module-specific details
