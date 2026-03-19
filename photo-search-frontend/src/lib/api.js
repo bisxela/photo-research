@@ -1,11 +1,31 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+export function getApiBaseUrl() {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+
+  if (typeof window !== "undefined") {
+    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+    const hostname = window.location.hostname || "localhost";
+    return `${protocol}//${hostname}:8000`;
+  }
+
+  return "http://localhost:8000";
+}
+
+export function resolveBackendAssetUrl(path) {
+  if (!path) {
+    return "";
+  }
+
+  return `${getApiBaseUrl()}${path}`;
+}
 
 export async function checkHealth() {
-  return requestJson(`${API_BASE_URL}/health`);
+  return requestJson(`${getApiBaseUrl()}/health`);
 }
 
 export async function searchImages(query, topK = 12) {
-  return requestJson(`${API_BASE_URL}/api/v1/search/text`, {
+  return requestJson(`${getApiBaseUrl()}/api/v1/search/text`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -15,7 +35,7 @@ export async function searchImages(query, topK = 12) {
 }
 
 export async function searchSimilarImages(imageId, topK = 12) {
-  return requestJson(`${API_BASE_URL}/api/v1/search/similar`, {
+  return requestJson(`${getApiBaseUrl()}/api/v1/search/similar`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -28,7 +48,7 @@ export async function uploadImage(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  return requestJson(`${API_BASE_URL}/api/v1/images/upload`, {
+  return requestJson(`${getApiBaseUrl()}/api/v1/images/upload`, {
     method: "POST",
     body: formData,
   });
@@ -41,14 +61,14 @@ export async function uploadImages(files) {
     formData.append("files", file);
   }
 
-  return requestJson(`${API_BASE_URL}/api/v1/images/batch-upload`, {
+  return requestJson(`${getApiBaseUrl()}/api/v1/images/batch-upload`, {
     method: "POST",
     body: formData,
   });
 }
 
 export async function getImage(imageId) {
-  return requestJson(`${API_BASE_URL}/api/v1/images/${imageId}`);
+  return requestJson(`${getApiBaseUrl()}/api/v1/images/${imageId}`);
 }
 
 async function requestJson(url, options = {}) {

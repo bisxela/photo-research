@@ -1,0 +1,36 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    libjpeg-dev \
+    zlib1g-dev \
+    libgomp1 \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+
+# Install CUDA-enabled PyTorch wheels instead of using a massive CUDA base image.
+RUN pip install --no-cache-dir \
+    --index-url https://download.pytorch.org/whl/cu121 \
+    torch==2.1.0 \
+    torchvision==0.16.0 \
+    && grep -vE '^(torch|torchvision)==.*$' requirements.txt > requirements.runtime.txt \
+    && pip install --no-cache-dir -r requirements.runtime.txt
+
+RUN mkdir -p /app/data/uploads /app/models
+
+COPY app/ ./app/
+COPY init-scripts/ ./init-scripts/
+
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

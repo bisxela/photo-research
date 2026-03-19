@@ -30,12 +30,24 @@ async def search_by_text(request: TextSearchRequest):
         
         # 3. 执行向量相似度搜索
         query = """
+            WITH ranked AS (
+                SELECT 
+                    i.id, i.filename, i.original_path, i.thumbnail_path,
+                    i.file_size, i.width, i.height, i.format, i.created_at,
+                    i.checksum,
+                    1 - (e.embedding <=> CAST(:embedding AS vector(512))) as similarity,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY COALESCE(i.checksum, i.id::text)
+                        ORDER BY 1 - (e.embedding <=> CAST(:embedding AS vector(512))) DESC, i.created_at ASC
+                    ) AS dedupe_rank
+                FROM image_embeddings e
+                JOIN images i ON e.id = i.id
+            )
             SELECT 
-                i.id, i.filename, i.original_path, i.thumbnail_path,
-                i.file_size, i.width, i.height, i.format, i.created_at,
-                1 - (e.embedding <=> CAST(:embedding AS vector(512))) as similarity
-            FROM image_embeddings e
-            JOIN images i ON e.id = i.id
+                id, filename, original_path, thumbnail_path,
+                file_size, width, height, format, created_at, similarity
+            FROM ranked
+            WHERE dedupe_rank = 1
             ORDER BY similarity DESC
             LIMIT :limit
         """
@@ -113,14 +125,26 @@ async def search_similar_images(request: SimilarImageRequest):
         
         # 2. 搜索相似图片（排除自己）
         query = """
+            WITH ranked AS (
+                SELECT 
+                    i.id, i.filename, i.original_path, i.thumbnail_path,
+                    i.file_size, i.width, i.height, i.format, i.created_at,
+                    i.checksum,
+                    1 - (e.embedding <=> :embedding) as similarity,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY COALESCE(i.checksum, i.id::text)
+                        ORDER BY e.embedding <=> :embedding ASC, i.created_at ASC
+                    ) AS dedupe_rank
+                FROM image_embeddings e
+                JOIN images i ON e.id = i.id
+                WHERE e.id != :exclude_id
+            )
             SELECT 
-                i.id, i.filename, i.original_path, i.thumbnail_path,
-                i.file_size, i.width, i.height, i.format, i.created_at,
-                1 - (e.embedding <=> :embedding) as similarity
-            FROM image_embeddings e
-            JOIN images i ON e.id = i.id
-            WHERE e.id != :exclude_id
-            ORDER BY e.embedding <=> :embedding
+                id, filename, original_path, thumbnail_path,
+                file_size, width, height, format, created_at, similarity
+            FROM ranked
+            WHERE dedupe_rank = 1
+            ORDER BY similarity DESC
             LIMIT :limit
         """
         

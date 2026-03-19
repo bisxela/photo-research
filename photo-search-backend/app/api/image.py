@@ -9,10 +9,28 @@ from app.models.schemas import ImageCreate, ImageResponse, BatchUploadResponse
 from app.core.database import database
 from app.core.clip_model import clip_encoder
 from app.utils.image_processing import ImageProcessor
+from app.utils.deduplication import compute_file_checksum
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def build_image_response(row, embedding_ready: bool = False) -> ImageResponse:
+    file_ext = Path(row["filename"]).suffix.lower()
+
+    return ImageResponse(
+        id=row["id"],
+        filename=row["filename"],
+        width=row["width"],
+        height=row["height"],
+        file_size=row["file_size"],
+        format=row["format"],
+        original_url=f"/uploads/{row['id']}_original{file_ext}",
+        thumbnail_url=f"/uploads/{row['id']}_thumbnail.jpg",
+        embedding_ready=embedding_ready,
+        created_at=row["created_at"]
+    )
 
 
 async def save_uploaded_image(file: UploadFile, background_tasks: BackgroundTasks) -> ImageResponse:
@@ -22,7 +40,7 @@ async def save_uploaded_image(file: UploadFile, background_tasks: BackgroundTask
     
     # 保存文件
     file_ext = Path(file.filename).suffix.lower()
-    if file_ext not in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
+    if file_ext not in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.mpo']:
         raise HTTPException(status_code=400, detail=f"Unsupported file format: {file_ext}")
     
     upload_dir = Path(settings.UPLOAD_DIR)
@@ -41,17 +59,34 @@ async def save_uploaded_image(file: UploadFile, background_tasks: BackgroundTask
         if not is_valid:
             original_path.unlink(missing_ok=True)
             raise HTTPException(status_code=400, detail=error_msg)
+
+        checksum = compute_file_checksum(original_path)
+
+        existing_query = """
+            SELECT
+                i.*,
+                EXISTS(SELECT 1 FROM image_embeddings e WHERE e.id = i.id) AS embedding_ready
+            FROM images i
+            WHERE i.checksum = :checksum
+            ORDER BY i.created_at ASC
+            LIMIT 1
+        """
+        existing = await database.fetch_one(existing_query, {"checksum": checksum})
+        if existing:
+            original_path.unlink(missing_ok=True)
+            logger.info("Duplicate upload detected for %s, reusing image %s", file.filename, existing["id"])
+            return build_image_response(existing, embedding_ready=bool(existing["embedding_ready"]))
         
         # 获取图片信息
         image_info = ImageProcessor.get_image_info(original_path)
         
         # 创建缩略图
-        thumb_w, thumb_h = ImageProcessor.create_thumbnail(original_path, thumbnail_path)
+        ImageProcessor.create_thumbnail(original_path, thumbnail_path)
         
         # 保存到数据库
         query = """
-            INSERT INTO images (id, filename, original_path, thumbnail_path, file_size, width, height, format)
-            VALUES (:id, :filename, :original_path, :thumbnail_path, :file_size, :width, :height, :format)
+            INSERT INTO images (id, filename, original_path, thumbnail_path, file_size, width, height, format, checksum)
+            VALUES (:id, :filename, :original_path, :thumbnail_path, :file_size, :width, :height, :format, :checksum)
             RETURNING *
         """
         values = {
@@ -62,7 +97,8 @@ async def save_uploaded_image(file: UploadFile, background_tasks: BackgroundTask
             "file_size": image_info['file_size'],
             "width": image_info['width'],
             "height": image_info['height'],
-            "format": image_info['format']
+            "format": image_info['format'],
+            "checksum": checksum,
         }
         
         result = await database.fetch_one(query, values)
@@ -70,18 +106,7 @@ async def save_uploaded_image(file: UploadFile, background_tasks: BackgroundTask
         # 后台异步编码图片向量
         background_tasks.add_task(encode_image_task, image_id, original_path)
         
-        return ImageResponse(
-            id=result["id"],
-            filename=result["filename"],
-            width=result["width"],
-            height=result["height"],
-            file_size=result["file_size"],
-            format=result["format"],
-            original_url=f"/uploads/{image_id}_original{file_ext}",
-            thumbnail_url=f"/uploads/{image_id}_thumbnail.jpg",
-            embedding_ready=False,
-            created_at=result["created_at"]
-        )
+        return build_image_response(result, embedding_ready=False)
         
     except HTTPException:
         raise
@@ -101,7 +126,7 @@ async def upload_image(
     """
     上传单张图片
     
-    支持的格式: JPEG, PNG, GIF, BMP, WEBP
+    支持的格式: JPEG, PNG, GIF, BMP, WEBP, MPO
     最大文件大小: 10MB
     """
     return await save_uploaded_image(file, background_tasks)
@@ -156,18 +181,7 @@ async def get_image(image_id: str):
     
     file_ext = Path(result["filename"]).suffix
     
-    return ImageResponse(
-        id=result["id"],
-        filename=result["filename"],
-        width=result["width"],
-        height=result["height"],
-        file_size=result["file_size"],
-        format=result["format"],
-        original_url=f"/uploads/{result['id']}_original{file_ext}",
-        thumbnail_url=f"/uploads/{result['id']}_thumbnail.jpg",
-        embedding_ready=bool(result["embedding_ready"]),
-        created_at=result["created_at"]
-    )
+    return build_image_response(result, embedding_ready=bool(result["embedding_ready"]))
 
 
 @router.delete("/{image_id}")

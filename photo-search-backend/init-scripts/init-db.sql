@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS images (
     filename VARCHAR(255) NOT NULL,
     original_path VARCHAR(500),
     thumbnail_path VARCHAR(500),
+    checksum VARCHAR(64),
     file_size BIGINT,
     width INTEGER,
     height INTEGER,
@@ -42,6 +43,7 @@ WITH (lists = 100);
 -- 创建普通索引优化查询
 CREATE INDEX IF NOT EXISTS idx_images_created_at ON images(created_at);
 CREATE INDEX IF NOT EXISTS idx_images_filename ON images(filename);
+CREATE INDEX IF NOT EXISTS idx_images_checksum ON images(checksum);
 
 -- 添加注释
 COMMENT ON TABLE images IS '存储图片元数据信息';

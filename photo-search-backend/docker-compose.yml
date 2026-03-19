@@ -78,10 +78,13 @@ services:
       - THUMBNAIL_SIZE=${THUMBNAIL_SIZE:-200}
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - STARTUP_WAIT_TIMEOUT=${STARTUP_WAIT_TIMEOUT:-90}
     volumes:
       - ./app:/app/app
+      - ./docker:/app/docker:ro
       - ./models:/app/models:ro
       - uploads_data:/app/data/uploads
+    command: ["/bin/sh", "/app/docker/start-backend.sh"]
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:

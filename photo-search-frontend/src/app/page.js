@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   checkHealth,
   getImage,
+  resolveBackendAssetUrl,
   searchImages,
   searchSimilarImages,
   uploadImage,
@@ -12,10 +13,12 @@ import {
 } from "@/lib/api";
 
 const sampleQueries = ["节日", "风景", "人物", "建筑", "美食"];
+const resultCountOptions = [6, 12, 24, 48];
 
 export default function Home() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
+  const [resultLimit, setResultLimit] = useState(12);
   const [status, setStatus] = useState("准备开始");
   const [service, setService] = useState(null);
   const [loadingSearch, setLoadingSearch] = useState(false);
@@ -46,7 +49,7 @@ export default function Home() {
       return "还没有结果，先试试上传一张图，或者直接搜“节日”。";
     }
 
-    return `当前共拿到 ${results.length} 条结果。点击卡片可以基于这张图继续搜索。`;
+    return `当前共展示 ${results.length} 条结果。点击卡片可以基于这张图继续搜索。`;
   }, [results]);
 
   useEffect(() => {
@@ -79,9 +82,10 @@ export default function Home() {
     setStatus(`正在搜索“${safeQuery}”...`);
 
     try {
-      const data = await searchImages(safeQuery, 12);
+      const data = await searchImages(safeQuery, resultLimit);
       setQuery(safeQuery);
-      setResults(data.results || []);
+      const dedupedResults = dedupeSearchResults(data.results || []);
+      setResults(dedupedResults);
       setStatus(`搜索完成，用时 ${data.search_time_ms ?? 0} ms。`);
     } catch (error) {
       setStatus(`搜索失败：${error.message}`);
@@ -138,8 +142,9 @@ export default function Home() {
     setStatus("正在查找相似图片...");
 
     try {
-      const data = await searchSimilarImages(imageId, 12);
-      setResults(data.results || []);
+      const data = await searchSimilarImages(imageId, resultLimit);
+      const dedupedResults = dedupeSearchResults(data.results || []);
+      setResults(dedupedResults);
       setStatus(`相似图搜索完成，用时 ${data.search_time_ms ?? 0} ms。`);
     } catch (error) {
       setStatus(`相似图搜索失败：${error.message}`);
@@ -374,10 +379,29 @@ export default function Home() {
                 ))}
               </div>
 
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+                  返回张数
+                </span>
+                {resultCountOptions.map((count) => (
+                  <button
+                    key={count}
+                    onClick={() => setResultLimit(count)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                      resultLimit === count
+                        ? "border border-[#9e4f20] bg-[#fff1e7] text-[#8f4317]"
+                        : "border border-stone-300 text-stone-600 hover:border-stone-900 hover:text-stone-950"
+                    }`}
+                  >
+                    {count} 张
+                  </button>
+                ))}
+              </div>
+
               <p className="text-sm leading-7 text-stone-600">{summaryText}</p>
             </Panel>
 
-            <section className="rounded-[28px] border border-stone-200/70 bg-[linear-gradient(180deg,_rgba(255,255,255,0.94),_rgba(249,245,240,0.92))] p-4 shadow-[0_24px_80px_rgba(84,57,24,0.08)] sm:p-5">
+            <section className="rounded-[24px] border border-stone-200/70 bg-[linear-gradient(180deg,_rgba(255,255,255,0.94),_rgba(249,245,240,0.92))] p-3 shadow-[0_24px_80px_rgba(84,57,24,0.08)] sm:rounded-[28px] sm:p-5">
               <div className="mb-4 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
@@ -391,14 +415,14 @@ export default function Home() {
                   {results.length ? `共 ${results.length} 张` : "等待结果"}
                 </p>
               </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
               {results.map((item) => {
-                const imageUrl = resolveAssetUrl(item.image.thumbnail_url);
+                const imageUrl = resolveBackendAssetUrl(item.image.thumbnail_url);
 
                 return (
                   <article
                     key={item.image.id}
-                    className="overflow-hidden rounded-[24px] border border-stone-200 bg-white shadow-[0_18px_40px_rgba(84,57,24,0.08)]"
+                    className="overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-[0_18px_40px_rgba(84,57,24,0.08)]"
                   >
                     <div className="aspect-square bg-stone-100">
                       {imageUrl ? (
@@ -412,34 +436,34 @@ export default function Home() {
                         />
                       ) : null}
                     </div>
-                    <div className="space-y-3 p-4">
+                    <div className="space-y-3 p-3 sm:p-5">
                       <div>
-                        <p className="line-clamp-1 text-sm font-semibold text-stone-900">
+                        <p className="line-clamp-2 text-sm font-semibold leading-5 text-stone-900 sm:text-base sm:leading-6">
                           {item.image.filename}
                         </p>
-                        <p className="mt-1 text-xs text-stone-500">
+                        <p className="mt-1 text-xs text-stone-500 sm:text-sm">
                           相似度 {Number(item.similarity_score).toFixed(3)}
                         </p>
                       </div>
 
-                      <div className="flex flex-wrap gap-2 text-xs text-stone-500">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500 sm:text-sm">
                         <span>{item.image.width ?? "?"} x {item.image.height ?? "?"}</span>
                         <span>{item.image.format ?? "unknown"}</span>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2">
                         <button
                           onClick={() => handleSimilarSearch(item.image.id)}
-                          className="flex-1 rounded-full border border-stone-300 px-3 py-2 text-xs font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950"
+                          className="min-h-10 rounded-full border border-stone-300 px-3 py-2.5 text-xs font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950 sm:min-h-11 sm:px-4 sm:py-3 sm:text-sm"
                         >
                           查相似图
                         </button>
                         {item.image.original_url ? (
                           <a
-                            href={resolveAssetUrl(item.image.original_url)}
+                            href={resolveBackendAssetUrl(item.image.original_url)}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex-1 rounded-full border border-[#b75d2a] bg-[#fff1e7] px-3 py-2 text-center text-xs font-semibold text-[#8f4317] transition hover:bg-[#ffe4d2] hover:text-[#723311]"
+                            className="min-h-10 rounded-full border border-[#b75d2a] bg-[#fff1e7] px-3 py-2.5 text-center text-xs font-semibold text-[#8f4317] transition hover:bg-[#ffe4d2] hover:text-[#723311] sm:min-h-11 sm:px-4 sm:py-3 sm:text-sm"
                           >
                             查看原图 ↗
                           </a>
@@ -458,13 +482,25 @@ export default function Home() {
   );
 }
 
-function resolveAssetUrl(path) {
-  if (!path) {
-    return "";
-  }
+function dedupeSearchResults(items) {
+  const seen = new Set();
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-  return `${baseUrl}${path}`;
+  return items.filter((item) => {
+    const key = [
+      item?.image?.filename ?? "",
+      item?.image?.width ?? "",
+      item?.image?.height ?? "",
+      item?.image?.file_size ?? "",
+      item?.image?.format ?? "",
+    ].join("|");
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
 }
 
 function getStatusTone(status) {

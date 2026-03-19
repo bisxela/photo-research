@@ -7,7 +7,6 @@ FastAPI backend for image upload, embedding generation, text-to-image search, an
 - FastAPI
 - PostgreSQL 14 + pgvector
 - Chinese CLIP
-- MinIO
 - Docker Compose
 
 ## Current Layout
@@ -23,6 +22,7 @@ photo-search-backend/
 
 - Upload single or multiple images
 - Generate thumbnails
+- Reuse existing images when the same file is uploaded again
 - Encode images with Chinese CLIP
 - Search by text
 - Search similar images by image ID
@@ -72,6 +72,26 @@ API docs:
 http://localhost:8000/docs
 ```
 
+## Run With GPU
+
+If Docker on this machine can access the NVIDIA GPU, start the backend with the GPU override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+```
+
+Then check backend logs for the device line:
+
+```bash
+docker compose logs -f backend | rg "Using device"
+```
+
+Expected output:
+
+```text
+Using device: cuda
+```
+
 ## Exposed Ports
 
 - `8000`: FastAPI
@@ -83,7 +103,9 @@ http://localhost:8000/docs
 
 - Uploaded files are stored in a Docker volume mounted to `/app/data/uploads`
 - Batch upload and embedding generation are available
-- GPU is not enabled in the current Docker setup
+- Search results are deduplicated by file checksum on the backend
+- Default setup is CPU-only
+- Optional GPU startup is provided by `docker-compose.gpu.yml` and `Dockerfile.gpu`
 
 ## Useful Commands
 

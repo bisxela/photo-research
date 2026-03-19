@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ImageProcessor:
     """图片处理工具类"""
     
-    SUPPORTED_FORMATS = {'JPEG', 'JPG', 'PNG', 'GIF', 'BMP', 'WEBP'}
+    SUPPORTED_FORMATS = {'JPEG', 'JPG', 'PNG', 'GIF', 'BMP', 'WEBP', 'MPO'}
     
     @staticmethod
     def validate_image(file_path: Path) -> Tuple[bool, Optional[str]]:

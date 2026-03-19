@@ -1,11 +1,12 @@
 # Photo Search
 
-Monorepo for the image semantic search project.
+Monorepo for the current web demo of the image semantic search project.
 
 ## Structure
 
 ```text
 photo-search/
+├── docs/
 ├── photo-search-frontend/
 └── photo-search-backend/
 ```
@@ -30,6 +31,7 @@ Path: `photo-search-backend/`
 - PostgreSQL + pgvector
 - Chinese CLIP embedding generation
 - Thumbnail generation
+- Upload deduplication by checksum
 - Static file exposure for uploaded assets
 
 ## Local Development
@@ -46,6 +48,12 @@ Health check:
 
 ```bash
 curl -s http://localhost:8000/health
+```
+
+Optional GPU mode:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --no-build
 ```
 
 ### 2. Start frontend
@@ -77,3 +85,8 @@ http://localhost:3000
 - Do not commit model weights
 - Do not commit runtime caches or uploaded data
 - Frontend and backend each keep their own local README for module-specific details
+
+## Additional Design Docs
+
+- [Tailscale remote access](./docs/tailscale-remote-access.md)
+- [Next steps](./docs/next-steps.md)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate test images for iOS integration testing"""
+"""Generate test images for local integration testing."""
 
 from PIL import Image, ImageDraw, ImageFont
 import os
