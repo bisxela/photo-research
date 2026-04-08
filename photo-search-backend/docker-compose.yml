@@ -59,6 +59,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+        PIP_DEFAULT_TIMEOUT: ${PIP_DEFAULT_TIMEOUT:-1200}
+        PIP_RETRIES: ${PIP_RETRIES:-20}
     container_name: photo-search-backend
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-photo_search}
@@ -74,9 +78,12 @@ services:
       - CLIP_MODEL_PATH=${CLIP_MODEL_PATH:-/app/models/chinese-clip-vit-base-patch16}
       - BACKEND_HOST=${BACKEND_HOST:-0.0.0.0}
       - BACKEND_PORT=${BACKEND_PORT:-8000}
+      - AUTH_SECRET=${AUTH_SECRET:-change-me-for-demo}
       - UPLOAD_DIR=${UPLOAD_DIR:-/app/data/uploads}
       - THUMBNAIL_SIZE=${THUMBNAIL_SIZE:-200}
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
+      - OCR_ENABLED=${OCR_ENABLED:-true}
+      - OCR_LANGUAGES=${OCR_LANGUAGES:-chi_sim+eng}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - STARTUP_WAIT_TIMEOUT=${STARTUP_WAIT_TIMEOUT:-90}
     volumes:

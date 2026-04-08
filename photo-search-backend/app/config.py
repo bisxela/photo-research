@@ -25,9 +25,12 @@ class Settings(BaseSettings):
     # 应用配置
     BACKEND_HOST: str = "0.0.0.0"
     BACKEND_PORT: int = 8000
+    AUTH_SECRET: str = "change-me-for-demo"
     UPLOAD_DIR: str = "/app/data/uploads"
     THUMBNAIL_SIZE: int = 200
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
+    OCR_ENABLED: bool = True
+    OCR_LANGUAGES: str = "chi_sim+eng"
     
     # 日志配置
     LOG_LEVEL: str = "INFO"

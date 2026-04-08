@@ -20,41 +20,75 @@ export function resolveBackendAssetUrl(path) {
   return `${getApiBaseUrl()}${path}`;
 }
 
+function buildAuthHeaders(token, extraHeaders = {}) {
+  return {
+    ...extraHeaders,
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 export async function checkHealth() {
   return requestJson(`${getApiBaseUrl()}/health`);
 }
 
-export async function searchImages(query, topK = 12) {
-  return requestJson(`${getApiBaseUrl()}/api/v1/search/text`, {
+export async function register(username, password) {
+  return requestJson(`${getApiBaseUrl()}/api/v1/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ query, top_k: topK }),
+    body: JSON.stringify({ username, password }),
   });
 }
 
-export async function searchSimilarImages(imageId, topK = 12) {
-  return requestJson(`${getApiBaseUrl()}/api/v1/search/similar`, {
+export async function login(username, password) {
+  return requestJson(`${getApiBaseUrl()}/api/v1/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export async function getCurrentUser(token) {
+  return requestJson(`${getApiBaseUrl()}/api/v1/auth/me`, {
+    headers: buildAuthHeaders(token),
+  });
+}
+
+export async function searchImages(token, query, topK = 12, searchType = "semantic") {
+  return requestJson(`${getApiBaseUrl()}/api/v1/search/text`, {
+    method: "POST",
+    headers: buildAuthHeaders(token, {
+      "Content-Type": "application/json",
+    }),
+    body: JSON.stringify({ query, top_k: topK, search_type: searchType }),
+  });
+}
+
+export async function searchSimilarImages(token, imageId, topK = 12) {
+  return requestJson(`${getApiBaseUrl()}/api/v1/search/similar`, {
+    method: "POST",
+    headers: buildAuthHeaders(token, {
+      "Content-Type": "application/json",
+    }),
     body: JSON.stringify({ image_id: imageId, top_k: topK }),
   });
 }
 
-export async function uploadImage(file) {
+export async function uploadImage(token, file) {
   const formData = new FormData();
   formData.append("file", file);
 
   return requestJson(`${getApiBaseUrl()}/api/v1/images/upload`, {
     method: "POST",
+    headers: buildAuthHeaders(token),
     body: formData,
   });
 }
 
-export async function uploadImages(files) {
+export async function uploadImages(token, files) {
   const formData = new FormData();
 
   for (const file of files) {
@@ -63,12 +97,37 @@ export async function uploadImages(files) {
 
   return requestJson(`${getApiBaseUrl()}/api/v1/images/batch-upload`, {
     method: "POST",
+    headers: buildAuthHeaders(token),
     body: formData,
   });
 }
 
-export async function getImage(imageId) {
-  return requestJson(`${getApiBaseUrl()}/api/v1/images/${imageId}`);
+export async function getImage(token, imageId) {
+  return requestJson(`${getApiBaseUrl()}/api/v1/images/${imageId}`, {
+    headers: buildAuthHeaders(token),
+  });
+}
+
+export async function listImages(token) {
+  return requestJson(`${getApiBaseUrl()}/api/v1/images`, {
+    headers: buildAuthHeaders(token),
+  });
+}
+
+export async function getImageOcr(token, imageId) {
+  return requestJson(`${getApiBaseUrl()}/api/v1/images/${imageId}/ocr`, {
+    headers: buildAuthHeaders(token),
+  });
+}
+
+export async function saveImageOcr(token, imageId, text, language = "chi_sim+eng", source = "client_tesseract") {
+  return requestJson(`${getApiBaseUrl()}/api/v1/images/${imageId}/ocr`, {
+    method: "PUT",
+    headers: buildAuthHeaders(token, {
+      "Content-Type": "application/json",
+    }),
+    body: JSON.stringify({ text, language, source }),
+  });
 }
 
 async function requestJson(url, options = {}) {

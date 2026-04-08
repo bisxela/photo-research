@@ -1,170 +1,168 @@
-# Next Steps
+# 下一步规划
 
-This document records the practical next steps for the current demo phase.
+本文记录当前 Demo 阶段更实际的后续安排。
 
-Current goal:
+## 当前目标
 
-- keep the project usable for yourself and a small group of friends
-- avoid unnecessary production complexity
-- improve search quality and mobile web experience
+- 让项目继续保持“自己可用，也能给少量朋友演示”
+- 避免过早引入生产级复杂度
+- 优先提升检索质量和演示体验
 
-## MinIO Decision
+## 关于 MinIO 的判断
 
-## Recommendation
+## 建议
 
-Do **not** switch the current demo to MinIO yet.
+当前阶段先不要把项目全面切到 MinIO。
 
-## Why
+## 原因
 
-For the current project stage, MinIO does not provide a meaningful performance win.
+以现在这个项目阶段来看，MinIO 暂时不会带来决定性的收益。
 
-### What MinIO would improve
+### MinIO 真正能改善的点
 
-- cleaner object-storage style file management
-- easier future migration to cloud storage
-- better long-term fit for multi-user or production deployment
+- 文件管理方式更接近对象存储
+- 将来迁移到云存储会更顺手
+- 更适合后续正式多用户部署
 
-### What MinIO would not materially improve right now
+### MinIO 当前并不能明显改善的点
 
-- CLIP encoding speed
-- text/image retrieval quality
-- frontend response speed
-- small-scale demo usability
+- CLIP 编码速度
+- 文本搜图和相似图检索质量
+- 前端页面响应速度
+- 小规模 Demo 的实际可用性
 
-### Cost at the current stage
+### 当前阶段引入 MinIO 的代价
 
-- more deployment complexity
-- more moving parts to maintain
-- another service to debug
-- upload logic needs to be rewritten from local filesystem to object storage
+- 部署复杂度增加
+- 需要维护更多服务
+- 调试成本更高
+- 上传逻辑需要从本地文件改写成对象存储方式
 
-## Conclusion
+## 结论
 
-For the current demo:
+在当前 Demo 阶段：
 
-- keep image storage on the local Docker volume
-- keep MinIO optional / dormant
-- spend effort on retrieval quality and user-facing experience first
+- 图片继续存在本地 Docker 卷中即可
+- MinIO 可以保留为可选组件，但不是当前重点
+- 精力优先投入到检索质量和演示体验
 
-## Current State Summary
+## 当前状态概览
 
-- backend supports image upload, batch upload, thumbnail generation, text search, and similar-image search
-- GPU backend mode is available
-- backend startup is stabilized with a pre-start wait for PostgreSQL
-- image uploads are deduplicated by file checksum
-- mobile web access works on iPhone Safari
-- minimal PWA support is enabled
-- current image gallery has been cleared
+- 后端支持单图上传、批量上传、缩略图生成、文本搜图、相似图检索
+- 已加入账号注册、登录和按账号隔离
+- GPU 模式可选
+- 后端启动时已经处理 PostgreSQL 等待问题
+- 上传去重已基于文件 checksum 实现
+- iPhone Safari 与基础 PWA 已可用
+- 当前已经适合比赛演示，但仍不是生产级多用户系统
 
-## Priority Roadmap
+## 优先路线
 
-## P1. Improve retrieval quality
+## P1. 优化检索质量
 
-Reason:
+原因：
 
-- current search quality is acceptable for a demo but still noisy
-- similarity scores being below `0.5` is not itself the main problem
-- ranking quality matters more than the raw number
+- 当前检索结果已经能演示，但仍然偏粗糙
+- 相似度分数高低本身不是唯一问题
+- 排序质量比单纯的分数更重要
 
-### Tasks
+### 建议任务
 
-- rebuild a clean demo gallery with better curated photos
-- test search quality on a smaller, more intentional dataset
-- compare text search and image search results separately
-- collect a short list of “bad queries” and “good queries”
-- evaluate whether top-k should be widened and then reranked
+- 重建一套更干净、更有代表性的演示图库
+- 用更小但更精心挑选的数据集测试效果
+- 分开评估文本搜图和相似图检索
+- 记录一份“效果差的查询词”和“效果好的查询词”
+- 评估是否需要先放宽 top-k 再做重排
 
-### Later improvements
+### 后续可继续做
 
-- add tags or lightweight metadata
-- add reranking rules
-- only evaluate model changes after the above
+- 给图片补标签或轻量元数据
+- 增加简单的重排规则
+- 在这些工作完成后，再考虑是否替换模型
 
-## P2. Improve mobile web UX
+## P2. 优化移动端体验
 
-Reason:
+原因：
 
-- the main usage path is now iPhone Safari + PWA
+- 当前主要演示路径仍然是手机浏览器或 PWA
 
-### Tasks
+### 建议任务
 
-- continue tuning upload flow for mobile
-- make batch upload progress clearer
-- improve result card density and readability on small screens
-- consider a more explicit “gallery mode” / “detail mode” toggle
-- test repeated use from Safari home-screen launch
+- 继续优化手机上的上传流程
+- 让批量上传进度更直观
+- 提升小屏幕上结果卡片的密度和可读性
+- 考虑增加“图库模式 / 详情模式”切换
+- 反复测试 Safari 添加到主屏后的使用体验
 
-## P3. Reduce demo complexity
+## P3. 保持 Demo 复杂度可控
 
-Reason:
+原因：
 
-- current demo should stay lightweight
+- 当前阶段最重要的是稳定和可演示，不是功能堆叠
 
-### Tasks
+### 建议任务
 
-- keep MinIO unused for now
-- decide later whether MinIO should be removed from the demo compose stack entirely
-- keep GPU mode available only when needed
+- MinIO 继续保留为可选项
+- 后续再决定是否把 MinIO 从默认 compose 中移除
+- GPU 模式只在确实需要时开启
 
-## P4. Small-group sharing
+## P4. 小规模共享使用
 
-Reason:
+原因：
 
-- project should be usable by you and a few friends without full productization
+- 项目已经进入“本机部署 + 多设备访问 + 多账号演示”的阶段
 
-### Tasks
+### 建议任务
 
-- continue using Tailscale for remote access
-- document the shortest “start backend / start frontend / open URL” flow
-- decide whether all users share one gallery or whether lightweight user separation is needed
+- 继续使用局域网或 Tailscale 进行访问
+- 文档中保持最短启动路径清晰
+- 补一份“双设备登录不同账号”的演示步骤
 
-## Optional Next Major Feature
+## 可选的下一阶段大功能
 
-If the project grows beyond a personal/shared demo, the next real architecture step is:
+如果项目继续往正式产品方向走，下一步会是：
 
-- user accounts
-- image ownership
-- per-user gallery isolation
+- 更完整的账号体系
+- 更安全的 token 和会话机制
+- 密码修改、退出失效、账号治理
+- 更正式的多用户图库管理
 
-Do not start this yet unless shared use becomes a real need.
+当前不用急着全部做完，先保证比赛演示稳定。
 
-## Suggested Immediate Next Session
+## 下次继续时建议这样做
 
-When you continue next time, start with these steps:
+1. 先读这份文档
+2. 按 CPU 或 GPU 模式启动后端
+3. 启动前端，并确认局域网可访问
+4. 注册 2 个测试账号
+5. 给每个账号上传一组小型演示图片
+6. 分别验证两个账号的检索隔离
+7. 记录检索问题并决定下一步重点
 
-1. read this file
-2. start backend in GPU or CPU mode as needed
-3. start frontend with LAN/Tailscale access
-4. upload a small, curated image set
-5. test and record search quality issues
-6. choose one of:
-   - retrieval quality tuning
-   - mobile UX improvement
+## 常用命令
 
-## Useful Commands
-
-### Start backend with GPU
+### 启动后端 GPU 模式
 
 ```bash
 cd /home/abin/projects/photo-search/photo-search-backend
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --no-build
 ```
 
-### Start frontend for local/LAN/Tailscale access
+### 启动前端，支持本地 / 局域网 / Tailscale 访问
 
 ```bash
 cd /home/abin/projects/photo-search/photo-search-frontend
 npm run dev -- --hostname 0.0.0.0
 ```
 
-### Stop backend
+### 停止后端
 
 ```bash
 cd /home/abin/projects/photo-search/photo-search-backend
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml down
 ```
 
-### Health check
+### 健康检查
 
 ```bash
 curl -s http://localhost:8000/health

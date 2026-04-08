@@ -14,7 +14,23 @@ logger = logging.getLogger(__name__)
 
 
 async def run_startup_migrations():
+    await database.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id UUID PRIMARY KEY,
+            username VARCHAR(32) UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
     await database.execute("ALTER TABLE images ADD COLUMN IF NOT EXISTS checksum VARCHAR(64)")
+    await database.execute("ALTER TABLE images ADD COLUMN IF NOT EXISTS owner_id VARCHAR(64)")
+    await database.execute("ALTER TABLE images ADD COLUMN IF NOT EXISTS ocr_text TEXT")
+    await database.execute("ALTER TABLE images ADD COLUMN IF NOT EXISTS ocr_source VARCHAR(64)")
+    await database.execute("ALTER TABLE images ADD COLUMN IF NOT EXISTS ocr_language VARCHAR(64)")
+    await database.execute("ALTER TABLE images ADD COLUMN IF NOT EXISTS ocr_updated_at TIMESTAMP")
+    await database.execute("UPDATE images SET owner_id = 'legacy-shared' WHERE owner_id IS NULL")
     await database.execute("DROP INDEX IF EXISTS idx_images_checksum_unique")
     await database.execute(
         """
@@ -22,6 +38,19 @@ async def run_startup_migrations():
         ON images (checksum)
         """
     )
+    await database.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_images_owner_id
+        ON images (owner_id)
+        """
+    )
+    await database.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_users_username
+        ON users (username)
+        """
+    )
+    await database.execute("ALTER TABLE search_logs ADD COLUMN IF NOT EXISTS owner_id VARCHAR(64)")
 
 
 async def backfill_missing_checksums():

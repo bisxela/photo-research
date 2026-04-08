@@ -1,15 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5efe5;
-  --foreground: #1c1b19;
+  /* 更纯净、带有现代感的背景色 */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --primary: #4f46e5; /* Indigo 600 */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "Heiti SC", sans-serif;
-  --font-mono: "SFMono-Regular", "JetBrains Mono", "Fira Code", monospace;
+  --color-primary: var(--primary);
+  --font-sans: "Inter", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
 }
 
 * {
@@ -23,7 +26,25 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "Heiti SC", sans-serif;
+  font-family: var(--font-sans);
+  /* 平滑文字渲染 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 自定义滚动条，更精致 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
 }
 
 a {
@@ -31,7 +52,7 @@ a {
   text-decoration: none;
 }
 
-button,
-input {
+button, input {
   font: inherit;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }

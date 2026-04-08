@@ -1,133 +1,137 @@
-# Tailscale Remote Access
+# Tailscale 远程访问说明
 
-This document shows how to access the local Photo Search web app and backend from outside the current LAN using Tailscale.
+本文说明如何通过 Tailscale 从局域网外访问本地运行的 Photo Search 前后端服务。
 
-## Why Tailscale
+## 为什么使用 Tailscale
 
-The current project is a local service:
+当前项目默认是本地服务：
 
-- frontend on port `3000`
-- backend on port `8000`
+- 前端端口：`3000`
+- 后端端口：`8000`
 
-Without Tailscale, access is limited to:
+如果不使用 Tailscale，通常只能在以下场景访问：
 
-- the same Wi-Fi / hotspot
-- devices that can directly reach your host LAN IP
+- 同一 Wi‑Fi 或同一热点下
+- 能直接访问你电脑局域网 IP 的设备
 
-Tailscale creates a private network between your devices, so your iPhone can reach your Linux machine even when they are not on the same local network.
+Tailscale 会在你的设备之间建立私有网络，因此即使 iPhone 和 Linux 主机不在同一局域网，也可以直接互通。
 
-Official docs:
+官方文档：
 
-- Linux install: https://tailscale.com/docs/install/linux
-- Install overview: https://tailscale.com/docs/install
-- Quickstart: https://tailscale.com/docs/install/start
+- Linux 安装：https://tailscale.com/docs/install/linux
+- 安装总览：https://tailscale.com/docs/install
+- 快速开始：https://tailscale.com/docs/install/start
 
-## What You Need
+## 需要准备的内容
 
-- a Tailscale account
-- Tailscale installed on your Ubuntu host
-- Tailscale installed on your iPhone
-- the project running locally on the Ubuntu host
+- 一个 Tailscale 账号
+- Ubuntu 主机已安装 Tailscale
+- iPhone 已安装 Tailscale
+- 项目已经在 Ubuntu 主机上运行
 
-## Host Setup (Ubuntu 22.04)
+## 主机配置（Ubuntu 22.04）
 
-Install Tailscale:
+安装 Tailscale：
 
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
 ```
 
-Bring the machine online:
+让主机上线：
 
 ```bash
 sudo tailscale up
 ```
 
-This prints a login URL. Open it in a browser and authenticate.
+执行后会输出登录链接，用浏览器打开并完成认证。
 
-After login, check the assigned Tailscale IP:
+登录完成后，查看分配到的 Tailscale IPv4：
 
 ```bash
 tailscale ip -4
 ```
 
-You can also inspect status:
+也可以查看当前状态：
 
 ```bash
 tailscale status
 ```
 
-## Start the Project for Remote Access
+## 启动项目
 
-### Backend
+### 启动后端
 
-GPU mode:
+GPU 模式：
 
 ```bash
 cd /home/abin/projects/photo-search/photo-search-backend
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --no-build
 ```
 
-CPU mode:
+CPU 模式：
 
 ```bash
 cd /home/abin/projects/photo-search/photo-search-backend
 docker compose up -d
 ```
 
-### Frontend
+### 启动前端
 
-Start the Next.js dev server on all interfaces:
+让 Next.js 监听所有网卡：
 
 ```bash
 cd /home/abin/projects/photo-search/photo-search-frontend
 npm run dev -- --hostname 0.0.0.0
 ```
 
-This is required so the frontend is reachable through the Tailscale interface.
+这样前端才能通过 Tailscale 网卡被远程设备访问。
 
-## iPhone Setup
+## iPhone 配置
 
-1. Install the Tailscale iPhone app from the App Store
-2. Log in using the same Tailscale account
-3. Confirm both devices appear in the same tailnet
+1. 在 App Store 安装 Tailscale
+2. 使用同一个 Tailscale 账号登录
+3. 确认手机和电脑都出现在同一个 tailnet 中
 
-## Access URLs
+## 访问地址
 
-Get the Ubuntu host Tailscale IPv4:
+先在 Ubuntu 主机上获取 Tailscale IPv4：
 
 ```bash
 tailscale ip -4
 ```
 
-Assume it returns:
+假设返回：
 
 ```text
 100.101.102.103
 ```
 
-Then open these from iPhone:
+则 iPhone 可访问：
 
-- frontend: `http://100.101.102.103:3000`
-- backend health: `http://100.101.102.103:8000/health`
+- 前端：`http://100.101.102.103:3000`
+- 后端健康检查：`http://100.101.102.103:8000/health`
 
-Because the frontend derives the backend host from the current page hostname, opening the frontend over Tailscale will also make frontend API calls target the Tailscale host on port `8000`.
+由于前端会根据当前页面域名自动推断后端地址，所以通过 Tailscale IP 打开前端后，前端请求也会自动指向这台主机的 `8000` 端口。
 
-## Optional: Use MagicDNS
+## 可选：使用 MagicDNS
 
-If MagicDNS is enabled in Tailscale, you may be able to use the machine name instead of the raw Tailscale IP.
+如果 Tailscale 已启用 MagicDNS，可以尝试直接使用主机名而不是 IP。
 
-Example:
+例如：
 
 ```text
 http://abin-lenovo:3000
 ```
 
-Use `tailscale status` to inspect names currently visible in your tailnet.
+可以用以下命令查看当前可见的设备名称：
 
-## Verification
+```bash
+tailscale status
+```
 
-On Ubuntu:
+## 验证方式
+
+在 Ubuntu 主机上：
 
 ```bash
 tailscale status
@@ -135,37 +139,37 @@ tailscale ip -4
 curl -s http://localhost:8000/health
 ```
 
-On iPhone:
+在 iPhone 上：
 
-- open the Tailscale IP on port `3000`
-- press `检查后端`
+- 打开 `3000` 端口的前端页面
+- 点击页面中的“检查后端”
 
-## Common Problems
+## 常见问题
 
-### Tailscale installed but not connected
+### 已安装 Tailscale，但没有连上网络
 
-Run:
+执行：
 
 ```bash
 sudo tailscale up
 ```
 
-### Frontend opens but API fails
+### 前端能打开，但接口请求失败
 
-Make sure backend is running on the host and reachable:
+确认后端服务可用：
 
 ```bash
 curl -s http://localhost:8000/health
 ```
 
-### Frontend works on host but not remotely
+### 主机本地能访问，但远程设备访问不了前端
 
-Make sure Next.js is started with:
+确认前端使用的是：
 
 ```bash
 npm run dev -- --hostname 0.0.0.0
 ```
 
-### Want a permanent service later
+### 以后想长期稳定运行
 
-For long-term usage, move the frontend from `next dev` to a production build and run it behind a reverse proxy.
+后续如果需要长期使用，建议把前端从 `next dev` 改为生产构建，再放到反向代理后面运行。
